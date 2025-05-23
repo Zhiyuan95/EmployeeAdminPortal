@@ -20,9 +20,9 @@ namespace EmployeeAdminPortal.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllEmployees()
+        public async Task<IActionResult> GetAllEmployees(int pageNumber = 1, int pageSize = 10)
         {
-            var allEmployees = await dbContext.Employees.ToListAsync();
+            var allEmployees = await dbContext.Employees.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync();
 
             return Ok(allEmployees);
         }
@@ -47,7 +47,7 @@ namespace EmployeeAdminPortal.Controllers
         // because we only want to accept the specific fields we need from the client.
         // This improves security by preventing users from accidentally or intentionally
         // setting fields like Id or DateCreated which should be controlled by the backend.
-        public IActionResult AddEmployee(AddEmployeeDto addEmployeeDto)
+        public async Task<IActionResult> AddEmployee(AddEmployeeDto addEmployeeDto)
         {
             if (!ModelState.IsValid)
             {
@@ -62,7 +62,7 @@ namespace EmployeeAdminPortal.Controllers
             };
             
             dbContext.Employees.Add(employeeEntity);
-            dbContext.SaveChanges();
+            await dbContext.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetEmployeeById), new { id = employeeEntity.Id }, employeeEntity);
         }
@@ -74,6 +74,7 @@ namespace EmployeeAdminPortal.Controllers
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
+
             }
 
             var employeeToUpdate = await dbContext.Employees.FindAsync(id);
@@ -88,7 +89,7 @@ namespace EmployeeAdminPortal.Controllers
             employeeToUpdate.Phone = updateEmployeeDto.Phone;
             employeeToUpdate.Salary = updateEmployeeDto.Salary;
 
-            dbContext.SaveChanges();
+            await dbContext.SaveChangesAsync();
             return Ok(employeeToUpdate);
         }
 
@@ -104,7 +105,7 @@ namespace EmployeeAdminPortal.Controllers
             }
 
             dbContext.Employees.Remove(employeeToDelete);
-            dbContext.SaveChanges();
+            await dbContext.SaveChangesAsync();
 
             return Ok(new
             {
