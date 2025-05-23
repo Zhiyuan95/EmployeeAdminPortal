@@ -3,6 +3,7 @@ using EmployeeAdminPortal.Models;
 using EmployeeAdminPortal.Models.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace EmployeeAdminPortal.Controllers
 {
@@ -19,18 +20,18 @@ namespace EmployeeAdminPortal.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetAllEmployees()
+        public async Task<IActionResult> GetAllEmployees()
         {
-            var allEmployees = dbContext.Employees.ToList();
+            var allEmployees = await dbContext.Employees.ToListAsync();
 
             return Ok(allEmployees);
         }
 
         [HttpGet]
         [Route("{id:guid}")]
-        public IActionResult GetEmployeeById(Guid id)
+        public async Task<IActionResult> GetEmployeeById(Guid id)
         {
-            var employee = dbContext.Employees.Find(id);
+            var employee = await dbContext.Employees.FindAsync(id);
 
             if (employee is null)
             {
@@ -48,6 +49,10 @@ namespace EmployeeAdminPortal.Controllers
         // setting fields like Id or DateCreated which should be controlled by the backend.
         public IActionResult AddEmployee(AddEmployeeDto addEmployeeDto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
             var employeeEntity = new Employee()
             {
                 Name = addEmployeeDto.Name,
@@ -59,14 +64,19 @@ namespace EmployeeAdminPortal.Controllers
             dbContext.Employees.Add(employeeEntity);
             dbContext.SaveChanges();
 
-            return Ok(employeeEntity);
+            return CreatedAtAction(nameof(GetEmployeeById), new { id = employeeEntity.Id }, employeeEntity);
         }
 
         [HttpPut]
         [Route("{id:guid}")]
-        public IActionResult UpdateEmployee(Guid id, UpdateEmployeeDto updateEmployeeDto)
+        public async Task<IActionResult> UpdateEmployee(Guid id, UpdateEmployeeDto updateEmployeeDto)
         {
-            var employeeToUpdate = dbContext.Employees.Find(id);
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var employeeToUpdate = await dbContext.Employees.FindAsync(id);
 
             if (employeeToUpdate is null)
             {
@@ -85,9 +95,9 @@ namespace EmployeeAdminPortal.Controllers
         [HttpDelete]
         [Route("{id:guid}")]
 
-        public IActionResult DeleteEmployeeById(Guid id)
+        public async Task<IActionResult> DeleteEmployeeById(Guid id)
         {
-            var employeeToDelete = dbContext.Employees.Find(id);
+            var employeeToDelete = await dbContext.Employees.FindAsync(id);
             if (employeeToDelete is null)
             {
                 return NotFound();
@@ -95,6 +105,7 @@ namespace EmployeeAdminPortal.Controllers
 
             dbContext.Employees.Remove(employeeToDelete);
             dbContext.SaveChanges();
+
             return Ok(new
             {
                 message = "Employee deleted successfully",
